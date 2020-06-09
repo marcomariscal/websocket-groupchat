@@ -1,8 +1,5 @@
 /** Functionality related to chatting. */
 
-const axios = require("axios");
-const jokeAPI = "https://icanhazdadjoke.com/";
-
 // Room is an abstraction of a chat channel
 const Room = require("./Room");
 
@@ -50,32 +47,24 @@ class ChatUser {
     });
   }
 
-  async handleJoke() {
-    const joke = await this.getJoke();
-    // this.room.broadcast({
-    this.send({
-      name: "Server",
-      type: "chat",
-      text: joke,
-    });
-  }
-
-  async getJoke() {
-    const { data } = await axios.get(jokeAPI, {
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    return data.joke;
-  }
-
   handleMembersRequest() {
     const members = [...this.room.members].map((m) => m.name);
+    this.send(
+      JSON.stringify({
+        name: "Server",
+        type: "chat",
+        text: `In this room: ${members}`,
+      })
+    );
+  }
+
+  handleNameChange(name) {
     this.room.broadcast({
-      name: "Server",
-      type: "chat",
-      text: `In this room: ${members}`,
+      type: "note",
+      text: `${this.name} changed name to "${name}".`,
     });
+
+    this.name = name;
   }
 
   /** Handle messages from client:
@@ -83,6 +72,7 @@ class ChatUser {
    * - {type: "join", name: username} : join
    * - {type: "chat", text: msg }     : chat
    * - {type: "chat", text: "/joke" } : chat
+   * - {type: "chat", text: "/members" } : chat
    */
 
   handleMessage(jsonData) {
@@ -92,13 +82,17 @@ class ChatUser {
     else if (
       msg.type === "chat" &&
       msg.text !== "/joke" &&
-      msg.text !== "/members"
+      msg.text !== "/members" &&
+      msg.text.indexOf("/name") === -1
     ) {
       this.handleChat(msg.text);
     } else if (msg.text === "/joke") {
-      this.handleJoke();
+      this.room.sendJoke(this);
     } else if (msg.text === "/members") {
       this.handleMembersRequest();
+    } else if (msg.text.indexOf("/name") !== -1) {
+      const name = msg.text.split(" ")[1];
+      this.handleNameChange(name);
     } else throw new Error(`bad message: ${msg.type}`);
   }
 

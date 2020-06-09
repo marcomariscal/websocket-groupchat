@@ -17,7 +17,7 @@ ws.onopen = function (evt) {
 
 /** called when msg received from server; displays it. */
 
-ws.onmessage = async function (evt) {
+ws.onmessage = function (evt) {
   console.log("message", evt);
 
   let msg = JSON.parse(evt.data);

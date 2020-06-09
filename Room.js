@@ -1,4 +1,6 @@
 /** Chat rooms that can be joined/left/broadcast to. */
+const axios = require("axios");
+const jokeAPI = "https://icanhazdadjoke.com/";
 
 // in-memory storage of roomNames -> room
 
@@ -50,6 +52,26 @@ class Room {
     for (let member of this.members) {
       member.send(JSON.stringify(data));
     }
+  }
+
+  async getJoke() {
+    const { data } = await axios.get(jokeAPI, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+    return data.joke;
+  }
+
+  async sendJoke(member) {
+    const joke = await this.getJoke();
+    member.send(
+      JSON.stringify({
+        type: "chat",
+        text: joke,
+        name: "Server",
+      })
+    );
   }
 }
 
